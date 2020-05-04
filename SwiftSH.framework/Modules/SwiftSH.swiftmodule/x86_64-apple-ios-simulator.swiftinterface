@@ -1,5 +1,5 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 5.2.2 (swiftlang-1103.0.32.6 clang-1103.0.32.51)
+// swift-compiler-version: Apple Swift version 5.2.4 (swiftlang-1103.0.32.9 clang-1103.0.32.53)
 // swift-module-flags: -target x86_64-apple-ios8.0-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -Onone -module-name SwiftSH
 import Libssh2
 import Swift
@@ -103,6 +103,7 @@ open class SSHSession {
     get
   }
   public init(sshLibrary: SwiftSH.SSHLibrary.Type = Libssh2.self, host: Swift.String, port: Swift.UInt16 = 22) throws
+  public func setCallbackQueue(queue: Dispatch.DispatchQueue)
   @objc deinit
   public var banner: Swift.String?
   public var connected: Swift.Bool {
@@ -118,6 +119,7 @@ open class SSHSession {
     get
     set(newValue)
   }
+  @discardableResult
   public func connect() -> Self
   public func connect(_ completion: SwiftSH.SSHCompletionBlock?)
   public func disconnect(_ completion: (() -> Swift.Void)?)
@@ -125,9 +127,12 @@ open class SSHSession {
     get
   }
   public func supportedAuthenticationMethods(_ username: Swift.String) throws -> [SwiftSH.AuthenticationMethod]
+  @discardableResult
   public func authenticate(_ challenge: SwiftSH.AuthenticationChallenge?) -> Self
   public func authenticate(_ challenge: SwiftSH.AuthenticationChallenge?, completion: SwiftSH.SSHCompletionBlock?)
+  @discardableResult
   public func checkFingerprint(_ callback: @escaping ([SwiftSH.FingerprintHashType : Swift.String]) -> Swift.Bool) -> Self
+  @discardableResult
   public func checkFingerprint(_ validFingerprints: Swift.String...) -> Self
 }
 public enum SSHError : Swift.Error {
@@ -303,20 +308,27 @@ public enum LogLevel : Swift.CustomStringConvertible, Swift.Comparable {
   public var readDataCallback: ((Foundation.Data?, Foundation.Data?) -> Swift.Void)? {
     get
   }
+  @discardableResult
   public func withCallback(_ callback: ((Swift.String?, Swift.String?) -> Swift.Void)?) -> Self
+  @discardableResult
   public func withCallback(_ callback: ((Foundation.Data?, Foundation.Data?) -> Swift.Void)?) -> Self
+  @discardableResult
   public func open() -> Self
   public func open(_ completion: SwiftSH.SSHCompletionBlock?)
   public func close(_ completion: (() -> Swift.Void)?)
+  @discardableResult
   public func write(_ data: Foundation.Data) -> Self
   public func write(_ data: Foundation.Data, completion: ((Swift.Error?) -> Swift.Void)?)
+  @discardableResult
   public func write(_ command: Swift.String) -> Self
   public func write(_ command: Swift.String, completion: ((Swift.Error?) -> Swift.Void)?)
 }
 @_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @available(*, unavailable)
 public class SCPSession : SwiftSH.SSHChannel {
+  @discardableResult
   public func download(_ from: Swift.String, to path: Swift.String) -> Self
   public func download(_ from: Swift.String, to path: Swift.String, completion: SwiftSH.SSHCompletionBlock?)
+  @discardableResult
   public func download(_ from: Swift.String, to stream: Foundation.OutputStream) -> Self
   public func download(_ from: Swift.String, to stream: Foundation.OutputStream, completion: SwiftSH.SSHCompletionBlock?)
   public func download(_ from: Swift.String, completion: @escaping ((Foundation.Data?, Swift.Error?) -> Swift.Void))
@@ -327,6 +339,7 @@ public class SCPSession : SwiftSH.SSHChannel {
     get
   }
   override public func disconnect(_ completion: (() -> Swift.Void)?)
+  @discardableResult
   public func setTerminalSize(width: Swift.UInt, height: Swift.UInt) -> Self
   public func setTerminalSize(width: Swift.UInt, height: Swift.UInt, completion: SwiftSH.SSHCompletionBlock?)
   @objc deinit
