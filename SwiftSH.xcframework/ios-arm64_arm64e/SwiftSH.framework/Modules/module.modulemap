@@ -1,0 +1,11 @@
+framework module SwiftSH {
+  umbrella header "SwiftSH.h"
+
+  export *
+  module * { export * }
+}
+
+module SwiftSH.Swift {
+    header "SwiftSH-Swift.h"
+    requires objc
+}

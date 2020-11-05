@@ -1,0 +1,363 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 5.3 (swiftlang-1200.0.29.2 clang-1200.0.30.1)
+// swift-module-flags: -target arm64-apple-ios8.0 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -module-name SwiftSH
+import Swift
+@_exported import SwiftSH
+public protocol SSHLibrary {
+  static var name: Swift.String { get }
+  static var version: Swift.String { get }
+  static func makeSession() throws -> SwiftSH.SSHLibrarySession
+}
+public protocol SSHLibrarySession {
+  var authenticated: Swift.Bool { get }
+  var blocking: Swift.Bool { get set }
+  var banner: Swift.String? { get }
+  var timeout: Swift.Int { get set }
+  func makeChannel() -> SwiftSH.SSHLibraryChannel
+  func setBanner(_ banner: Swift.String) throws
+  func handshake(_ socket: CoreFoundation.CFSocket) throws
+  func fingerprint(_ hashType: SwiftSH.FingerprintHashType) -> Swift.String?
+  func authenticationList(_ username: Swift.String) throws -> [Swift.String]
+  func authenticateByPassword(_ username: Swift.String, password: Swift.String) throws
+  func authenticateByKeyboardInteractive(_ username: Swift.String, callback: @escaping ((Swift.String) -> Swift.String)) throws
+  func authenticateByPublicKeyFromFile(_ username: Swift.String, password: Swift.String, publicKey: Swift.String?, privateKey: Swift.String) throws
+  func authenticateByPublicKeyFromMemory(_ username: Swift.String, password: Swift.String, publicKey: Foundation.Data?, privateKey: Foundation.Data) throws
+  func disconnect() throws
+}
+public protocol SSHLibraryChannel {
+  var opened: Swift.Bool { get }
+  var receivedEOF: Swift.Bool { get }
+  func openChannel() throws
+  func closeChannel() throws
+  func setEnvironment(_ environment: SwiftSH.Environment) throws
+  func requestPseudoTerminal(_ terminal: SwiftSH.Terminal) throws
+  func setPseudoTerminalSize(_ terminal: SwiftSH.Terminal) throws
+  func exec(_ command: Swift.String) throws
+  func shell() throws
+  func read() throws -> Foundation.Data
+  func readError() throws -> Foundation.Data
+  func write(_ data: Foundation.Data) -> (error: Swift.Error?, bytesSent: Swift.Int)
+  func exitStatus() -> Swift.Int?
+  func sendEOF() throws
+}
+public protocol SSHLibrarySFTP {
+}
+public protocol SSHLibrarySCP {
+}
+public enum FingerprintHashType : Swift.CustomStringConvertible {
+  case md5, sha1
+  public var description: Swift.String {
+    get
+  }
+  public static func == (a: SwiftSH.FingerprintHashType, b: SwiftSH.FingerprintHashType) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+public enum AuthenticationMethod : Swift.CustomStringConvertible, Swift.Equatable {
+  case password, keyboardInteractive, publicKey
+  case unknown(Swift.String)
+  public init(_ rawValue: Swift.String)
+  public var description: Swift.String {
+    get
+  }
+  public static func == (a: SwiftSH.AuthenticationMethod, b: SwiftSH.AuthenticationMethod) -> Swift.Bool
+}
+public enum AuthenticationChallenge {
+  case byPassword(username: Swift.String, password: Swift.String)
+  case byKeyboardInteractive(username: Swift.String, callback: ((Swift.String) -> Swift.String))
+  case byPublicKeyFromFile(username: Swift.String, password: Swift.String, publicKey: Swift.String?, privateKey: Swift.String)
+  case byPublicKeyFromMemory(username: Swift.String, password: Swift.String, publicKey: Foundation.Data?, privateKey: Foundation.Data)
+}
+public struct Environment {
+  public let name: Swift.String
+  public let variable: Swift.String
+  public init(name: Swift.String, variable: Swift.String)
+}
+public struct Terminal : Swift.ExpressibleByStringLiteral, Swift.CustomStringConvertible {
+  public let name: Swift.String
+  public var width: Swift.UInt
+  public var height: Swift.UInt
+  public var description: Swift.String {
+    get
+  }
+  public init(_ name: Swift.String, width: Swift.UInt = 80, height: Swift.UInt = 24)
+  public init(unicodeScalarLiteral value: Swift.String)
+  public init(extendedGraphemeClusterLiteral value: Swift.String)
+  public init(stringLiteral value: Swift.StringLiteralType)
+  public typealias StringLiteralType = Swift.StringLiteralType
+  public typealias ExtendedGraphemeClusterLiteralType = Swift.String
+  public typealias UnicodeScalarLiteralType = Swift.String
+}
+public typealias SSHCompletionBlock = (Swift.Error?) -> Swift.Void
+open class SSHSession {
+  final public let host: Swift.String
+  final public let port: Swift.UInt16
+  public var log: SwiftSH.Logger
+  public var version: Swift.String {
+    get
+  }
+  public init(sshLibrary: SwiftSH.SSHLibrary.Type = Libssh2.self, host: Swift.String, port: Swift.UInt16 = 22) throws
+  public func setCallbackQueue(queue: Dispatch.DispatchQueue)
+  @objc deinit
+  public var banner: Swift.String?
+  public var connected: Swift.Bool {
+    get
+  }
+  public var remoteBanner: Swift.String? {
+    get
+  }
+  public var fingerprint: [SwiftSH.FingerprintHashType : Swift.String] {
+    get
+  }
+  public var timeout: Foundation.TimeInterval {
+    get
+    set
+  }
+  @discardableResult
+  public func connect() -> Self
+  public func connect(_ completion: SwiftSH.SSHCompletionBlock?)
+  public func disconnect(_ completion: (() -> Swift.Void)?)
+  public var authenticated: Swift.Bool {
+    get
+  }
+  public func supportedAuthenticationMethods(_ username: Swift.String) throws -> [SwiftSH.AuthenticationMethod]
+  @discardableResult
+  public func authenticate(_ challenge: SwiftSH.AuthenticationChallenge?) -> Self
+  public func authenticate(_ challenge: SwiftSH.AuthenticationChallenge?, completion: SwiftSH.SSHCompletionBlock?)
+  @discardableResult
+  public func checkFingerprint(_ callback: @escaping ([SwiftSH.FingerprintHashType : Swift.String]) -> Swift.Bool) -> Self
+  @discardableResult
+  public func checkFingerprint(_ validFingerprints: Swift.String...) -> Self
+}
+public enum SSHError : Swift.Error {
+  case unknown
+  case bannerReceive
+  case bannerSend
+  case invalidMessageAuthenticationCode
+  case decrypt
+  case methodNone
+  case requestDenied
+  case methodNotSupported
+  case invalid
+  case agentProtocol
+  case encrypt
+  case allocation
+  case timeout
+  case `protocol`
+  case again
+  case bufferTooSmall
+  case badUse
+  case compress
+  case outOfBoundary
+  case alreadyConnected
+  case hostResolutionFailed
+  case keyExchangeFailure
+  case hostkey
+  case authenticationFailed
+  case passwordExpired
+  case publicKeyUnverified
+  case publicKeyProtocol
+  case publicKeyFile
+  case unsupportedAuthenticationMethod
+  case knownHosts
+  public enum Socket : Swift.Error {
+    case write
+    case read
+    case disconnected
+    case timeout
+    case invalid
+    public static func == (a: SwiftSH.SSHError.Socket, b: SwiftSH.SSHError.Socket) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public enum Channel : Swift.Error {
+    case unknown
+    case alreadyOpen
+    case invalid
+    case outOfOrder
+    case failure
+    case requestDenied
+    case windowExceeded
+    case packetExceeded
+    case closed
+    case sentEndOfFile
+    public static func == (a: SwiftSH.SSHError.Channel, b: SwiftSH.SSHError.Channel) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public enum SFTP : Swift.Error {
+    case unknown
+    case invalidSession
+    case endOfFile
+    case noSuchFile
+    case permissionDenied
+    case failure
+    case badMessage
+    case noConnection
+    case connectionLost
+    case operationUnsupported
+    case invalidHandle
+    case noSuchPath
+    case fileAlreadyExists
+    case writeProtect
+    case noMedia
+    case noSpaceOnFilesystem
+    case quotaExceeded
+    case unknownPrincipal
+    case lockConflict
+    case directoryNotEmpty
+    case notADirectory
+    case invalidFilename
+    case linkLoop
+    public static func == (a: SwiftSH.SSHError.SFTP, b: SwiftSH.SSHError.SFTP) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public enum SCP : Swift.Error {
+    case `protocol`
+    case invalidPath
+    public static func == (a: SwiftSH.SSHError.SCP, b: SwiftSH.SSHError.SCP) -> Swift.Bool
+    public var hashValue: Swift.Int {
+      get
+    }
+    public func hash(into hasher: inout Swift.Hasher)
+  }
+  public enum Command : Swift.Error {
+    case execError(Swift.String?, Foundation.Data)
+  }
+  public static func == (a: SwiftSH.SSHError, b: SwiftSH.SSHError) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+public enum SSHDisconnectionCode : Swift.Int {
+  case hostNotAllowedToConnect
+  case protocolError
+  case keyExchangeFailed
+  case reserved
+  case macError
+  case compressionError
+  case serviceNotAvailable
+  case protocolVersionNotSupported
+  case hostKeyNotVerifiable
+  case connectionLost
+  case byApplication
+  case tooManyConnections
+  case authenticationCancelledByUser
+  case noMoreAuthenticationMethodsAvailable
+  case illegalUserName
+  public typealias RawValue = Swift.Int
+  public init?(rawValue: Swift.Int)
+  public var rawValue: Swift.Int {
+    get
+  }
+}
+@_inheritsConvenienceInitializers @available(*, unavailable)
+public class SFTPSession : SwiftSH.SSHSession {
+  @objc deinit
+  override public init(sshLibrary: SwiftSH.SSHLibrary.Type = super, host: Swift.String, port: Swift.UInt16 = super) throws
+}
+public protocol Logger {
+  var enabled: Swift.Bool { get set }
+  var level: SwiftSH.LogLevel { get set }
+  func debug(_ message: @autoclosure () -> Swift.String)
+  func info(_ message: @autoclosure () -> Swift.String)
+  func warn(_ message: @autoclosure () -> Swift.String)
+  func error(_ message: @autoclosure () -> Swift.String)
+}
+public enum LogLevel : Swift.CustomStringConvertible, Swift.Comparable {
+  case debug, info, warning, error
+  public var description: Swift.String {
+    get
+  }
+  public static func < (lhs: SwiftSH.LogLevel, rhs: SwiftSH.LogLevel) -> Swift.Bool
+  public static func == (a: SwiftSH.LogLevel, b: SwiftSH.LogLevel) -> Swift.Bool
+  public var hashValue: Swift.Int {
+    get
+  }
+  public func hash(into hasher: inout Swift.Hasher)
+}
+@_hasMissingDesignatedInitializers public class Libssh2 : SwiftSH.SSHLibrary {
+  public static let name: Swift.String
+  public static var version: Swift.String
+  public static func makeSession() throws -> SwiftSH.SSHLibrarySession
+  @objc deinit
+}
+@_inheritsConvenienceInitializers public class SSHShell : SwiftSH.SSHChannel {
+  public init(sshLibrary: SwiftSH.SSHLibrary.Type = Libssh2.self, host: Swift.String, port: Swift.UInt16 = 22, environment: [SwiftSH.Environment] = [], terminal: SwiftSH.Terminal? = nil) throws
+  @objc deinit
+  public var readStringCallback: ((Swift.String?, Swift.String?) -> Swift.Void)? {
+    get
+  }
+  public var readDataCallback: ((Foundation.Data?, Foundation.Data?) -> Swift.Void)? {
+    get
+  }
+  @discardableResult
+  public func withCallback(_ callback: ((Swift.String?, Swift.String?) -> Swift.Void)?) -> Self
+  @discardableResult
+  public func withCallback(_ callback: ((Foundation.Data?, Foundation.Data?) -> Swift.Void)?) -> Self
+  @discardableResult
+  public func open() -> Self
+  public func open(_ completion: SwiftSH.SSHCompletionBlock?)
+  public func close(_ completion: (() -> Swift.Void)?)
+  @discardableResult
+  public func write(_ data: Foundation.Data) -> Self
+  public func write(_ data: Foundation.Data, completion: ((Swift.Error?) -> Swift.Void)?)
+  @discardableResult
+  public func write(_ command: Swift.String) -> Self
+  public func write(_ command: Swift.String, completion: ((Swift.Error?) -> Swift.Void)?)
+}
+@_inheritsConvenienceInitializers @_hasMissingDesignatedInitializers @available(*, unavailable)
+public class SCPSession : SwiftSH.SSHChannel {
+  @discardableResult
+  public func download(_ from: Swift.String, to path: Swift.String) -> Self
+  public func download(_ from: Swift.String, to path: Swift.String, completion: SwiftSH.SSHCompletionBlock?)
+  @discardableResult
+  public func download(_ from: Swift.String, to stream: Foundation.OutputStream) -> Self
+  public func download(_ from: Swift.String, to stream: Foundation.OutputStream, completion: SwiftSH.SSHCompletionBlock?)
+  public func download(_ from: Swift.String, completion: @escaping ((Foundation.Data?, Swift.Error?) -> Swift.Void))
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers open class SSHChannel : SwiftSH.SSHSession {
+  public var terminal: SwiftSH.Terminal? {
+    get
+  }
+  override public func disconnect(_ completion: (() -> Swift.Void)?)
+  @discardableResult
+  public func setTerminalSize(width: Swift.UInt, height: Swift.UInt) -> Self
+  public func setTerminalSize(width: Swift.UInt, height: Swift.UInt, completion: SwiftSH.SSHCompletionBlock?)
+  override public init(sshLibrary: SwiftSH.SSHLibrary.Type = super, host: Swift.String, port: Swift.UInt16 = super) throws
+  @objc deinit
+}
+@_inheritsConvenienceInitializers public class SSHCommand : SwiftSH.SSHChannel {
+  public init(sshLibrary: SwiftSH.SSHLibrary.Type = Libssh2.self, host: Swift.String, port: Swift.UInt16 = 22, environment: [SwiftSH.Environment] = [], terminal: SwiftSH.Terminal? = nil) throws
+  @objc deinit
+  public func close()
+  public func execute(_ command: Swift.String, completion: ((Swift.String, Foundation.Data?, Swift.Error?) -> Swift.Void)?)
+  public func execute(_ command: Swift.String, completion: ((Swift.String, Swift.String?, Swift.Error?) -> Swift.Void)?)
+}
+extension SwiftSH.FingerprintHashType : Swift.Equatable {}
+extension SwiftSH.FingerprintHashType : Swift.Hashable {}
+extension SwiftSH.SSHError : Swift.Equatable {}
+extension SwiftSH.SSHError : Swift.Hashable {}
+extension SwiftSH.SSHError.Socket : Swift.Equatable {}
+extension SwiftSH.SSHError.Socket : Swift.Hashable {}
+extension SwiftSH.SSHError.Channel : Swift.Equatable {}
+extension SwiftSH.SSHError.Channel : Swift.Hashable {}
+extension SwiftSH.SSHError.SFTP : Swift.Equatable {}
+extension SwiftSH.SSHError.SFTP : Swift.Hashable {}
+extension SwiftSH.SSHError.SCP : Swift.Equatable {}
+extension SwiftSH.SSHError.SCP : Swift.Hashable {}
+extension SwiftSH.SSHDisconnectionCode : Swift.Equatable {}
+extension SwiftSH.SSHDisconnectionCode : Swift.Hashable {}
+extension SwiftSH.SSHDisconnectionCode : Swift.RawRepresentable {}
+extension SwiftSH.LogLevel : Swift.Hashable {}
